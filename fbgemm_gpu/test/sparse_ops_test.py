@@ -11,6 +11,7 @@ import contextlib
 import functools
 import itertools
 import logging
+import os
 import random
 import unittest
 from itertools import accumulate
@@ -2386,6 +2387,52 @@ class SparseOpsTest(unittest.TestCase):
             "grad",
         )
 
+
+from torch._utils_internal import get_file_path_2
+from torch.testing._internal.optests import generate_opcheck_tests
+
+failures_dict_path: str = get_file_path_2(
+    "", os.path.dirname(__file__), "failures_dict.json"
+)
+
+# e.g. "test_faketensor__test_cumsum": [unittest.expectedFailure]
+# Please avoid putting tests here, you should put operator-specific
+# skips and failures in deeplearning/fbgemm/fbgemm_gpu/test/failures_dict.json
+# pyre-ignore[24]: Generic type `Callable` expects 2 type parameters.
+additional_decorators: Dict[str, List[Callable]] = {
+    "test_aot_dispatch_dynamic__test_index_select_dim0": [unittest.skip("hangs")],
+    "test_aot_dispatch_static__test_index_select_dim0": [unittest.skip("hangs")],
+    "test_faketensor__test_index_select_dim0": [unittest.skip("hangs")],
+    "test_autograd_registration__test_index_select_dim0": [unittest.skip("hangs")],
+    "test_schema__test_index_select_dim0": [unittest.skip("hangs")],
+    "test_aot_dispatch_dynamic__test_pack_segments": [
+        unittest.skip("ASAN heap buffer overflow")
+    ],
+    "test_aot_dispatch_static__test_pack_segments": [
+        unittest.skip("ASAN heap buffer overflow")
+    ],
+    "test_faketensor__test_pack_segments": [unittest.skip("ASAN heap buffer overflow")],
+    "test_autograd_registration__test_pack_segments": [
+        unittest.skip("ASAN heap buffer overflow")
+    ],
+    "test_schema__test_pack_segments": [unittest.skip("ASAN heap buffer overflow")],
+}
+
+generate_opcheck_tests(
+    SparseOpsTest,
+    ["fb", "fbgemm"],
+    failures_dict_path,
+    # pyre-fixme[6]: For 4th argument expected `List[typing.Callable[...,
+    #  typing.Any]]` but got `Dict[str, List[typing.Callable[..., typing.Any]]]`.
+    additional_decorators,
+    [
+        "test_schema",
+        "test_autograd_registration",
+        "test_faketensor",
+        "test_aot_dispatch_static",
+        "test_aot_dispatch_dynamic",
+    ],
+)
 
 if __name__ == "__main__":
     unittest.main()
